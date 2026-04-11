@@ -33,9 +33,7 @@
     "passport-facebook": "^3.0.0",
     "passport-google-oauth20": "^2.0.0",
     "razorpay": "^2.9.6",
-    "ua-parser-js": "^2.0.9"
-  },
-  "devDependencies": {
+    "ua-parser-js": "^2.0.9",
     "@types/bcrypt": "^6.0.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
@@ -45,8 +43,10 @@
     "@types/node": "^25.3.0",
     "@types/node-cron": "^3.0.11",
     "@types/ua-parser-js": "^0.7.39",
-    "nodemon": "^3.1.14",
-    "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14",
+    "ts-node": "^10.9.2"
   }
 }
