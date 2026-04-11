@@ -1,0 +1,10 @@
+{
+  "status": 200,
+  "data": {
+    "_id": "699ecc249a6de171e52ac701",
+    "name": "Admin User",
+    "email": "admin@opentheatre.com",
+    "role": "SUPER_ADMIN",
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5OWVjYzI0OWE2ZGUxNzFlNTJhYzcwMSIsInJvbGUiOiJTVVBFUl9BRE1JTiIsImlhdCI6MTc3MjY0MjUwMywiZXhwIjoxNzcyNjQzNDAzfQ.Hdq3UD7qb6o7KZkgXzXaO3kx7_aBcarAmYDlePnnSK8"
+  }
+}

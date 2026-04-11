@@ -1,0 +1,38 @@
+{
+  "_id": "69cc11bafe03fde6398974bb",
+  "title": "ANDAMAN (2021)",
+  "slug": "andaman-2021",
+  "description": "Andaman is an inspirational social drama about a quarantine centre in an unprivileged village.",
+  "price": 100,
+  "rentalDuration": 48,
+  "thumbnailUrl": "https://vz-9dc943c6-c72.b-cdn.net/aef6dacf-f338-4347-85d1-854bf403241b/thumbnail_c7b7c106.jpg?token=d0d4aee921f8f7d33f697a5e645001cafd26249221d4d4574a5ecdf5acc08f5a&expires=1775002949",
+  "trailerUrl": "",
+  "videoLibraryId": "aef6dacf-f338-4347-85d1-854bf403241b",
+  "genre": "Hindi , Drama ",
+  "director": "Smita Singh",
+  "writers": [
+    "Anand Raaj"
+  ],
+  "stars": [
+    "Vishal Agiran",
+    "Arav Aryavanshi",
+    "Arav Aryavanshi"
+  ],
+  "imdbRating": 8.5,
+  "language": "",
+  "releaseYear": 2026,
+  "isActive": true,
+  "isDeleted": false,
+  "deletedAt": null,
+  "deletedBy": null,
+  "version": 1,
+  "previousVersions": [],
+  "updatedBy": null,
+  "createdAt": "2026-03-31T18:26:02.753Z",
+  "updatedAt": "2026-04-02T18:51:18.332Z",
+  "__v": 0,
+  "displayLocations": [
+    "home_banner",
+    "trending"
+  ]
+}
