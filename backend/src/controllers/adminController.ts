@@ -11,7 +11,18 @@ import Analytics from '../models/Analytics';
 import AnalyticsSnapshot from '../models/AnalyticsSnapshot';
 import TrafficLog from '../models/TrafficLog';
 import { signCdnUrl } from '../services/bunnyService';
-import { Parser } from 'json2csv';
+// Zero-dependency CSV builder — handles quotes, commas, and newlines inside values
+const buildCsv = (fields: string[], rows: Record<string, any>[]): string => {
+  const escape = (val: any): string => {
+    const str = val === null || val === undefined ? '' : String(val);
+    return str.includes(',') || str.includes('"') || str.includes('\n')
+      ? `"${str.replace(/"/g, '""')}"`
+      : str;
+  };
+  const header = fields.join(',');
+  const body = rows.map(row => fields.map(f => escape(row[f])).join(',')).join('\r\n');
+  return `${header}\r\n${body}`;
+};
 
 // Movies CRUD
 export const getMovies = async (req: Request, res: Response): Promise<void> => {
@@ -729,8 +740,7 @@ export const getMovieSubscribers = async (req: Request, res: Response): Promise<
     // CSV Export
     if (req.query.export === 'csv') {
       const fields = ['orderId', 'userId', 'name', 'email', 'phone', 'amount', 'paymentId', 'accessExpiresAt', 'purchasedAt'];
-      const parser = new Parser({ fields });
-      const csv = parser.parse(data);
+      const csv = buildCsv(fields, data);
       res.setHeader('Content-Type', 'text/csv');
       res.setHeader('Content-Disposition', `attachment; filename="${slug}-subscribers.csv"`);
       res.send(csv);
@@ -795,8 +805,7 @@ export const getMovieReviewsById = async (req: Request, res: Response): Promise<
     // CSV Export
     if (req.query.export === 'csv') {
       const fields = ['reviewId', 'userId', 'userName', 'userEmail', 'rating', 'title', 'comment', 'verifiedPurchase', 'likes', 'dislikes', 'createdAt'];
-      const parser = new Parser({ fields });
-      const csv = parser.parse(data);
+      const csv = buildCsv(fields, data);
       res.setHeader('Content-Type', 'text/csv');
       res.setHeader('Content-Disposition', `attachment; filename="${slug}-reviews.csv"`);
       res.send(csv);

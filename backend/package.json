@@ -33,7 +33,6 @@
     "express-rate-limit": "^8.2.1",
     "geoip-lite": "^2.0.0",
     "helmet": "^8.1.0",
-    "json2csv": "^6.0.0-alpha.2",
     "jsonwebtoken": "^9.0.3",
     "mongodb": "^7.1.1",
     "mongoose": "^9.2.2",
@@ -47,7 +46,6 @@
     "ua-parser-js": "^2.0.9"
   },
   "devDependencies": {
-    "@types/json2csv": "^5.0.7",
     "nodemon": "^3.1.14",
     "ts-node": "^10.9.2"
   }
