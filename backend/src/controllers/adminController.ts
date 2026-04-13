@@ -11,6 +11,7 @@ import Analytics from '../models/Analytics';
 import AnalyticsSnapshot from '../models/AnalyticsSnapshot';
 import TrafficLog from '../models/TrafficLog';
 import { signCdnUrl } from '../services/bunnyService';
+import { Parser } from 'json2csv';
 
 // Movies CRUD
 export const getMovies = async (req: Request, res: Response): Promise<void> => {
@@ -687,3 +688,128 @@ export const getTrafficAnalytics = async (req: Request, res: Response): Promise<
 };
 
 
+// ─────────────────────────────────────────────────────────────────────────────
+// MOVIE-WISE SUBSCRIBER (RENTAL) DATA
+// GET /api/admin/movies/:slug/subscribers
+// ─────────────────────────────────────────────────────────────────────────────
+export const getMovieSubscribers = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { slug } = req.params;
+
+    // Resolve movie by slug or ObjectId
+    let movie: any;
+    if (mongoose.isValidObjectId(slug)) {
+      movie = await Movie.findById(slug).lean();
+    }
+    if (!movie) {
+      movie = await Movie.findOne({ slug }).lean();
+    }
+    if (!movie) {
+      res.status(404).json({ message: 'Movie not found' });
+      return;
+    }
+
+    const subscribers = await Order.find({ movieId: movie._id })
+      .populate('userId', 'name email phoneNumber createdAt')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const data = subscribers.map((order: any) => ({
+      orderId: order._id?.toString(),
+      userId: order.userId?._id?.toString(),
+      name: order.userId?.name || 'N/A',
+      email: order.userId?.email || 'N/A',
+      phone: order.userId?.phoneNumber || 'N/A',
+      amount: order.amount,
+      paymentId: order.paymentId,
+      accessExpiresAt: order.accessExpiresAt ? new Date(order.accessExpiresAt).toISOString() : '',
+      purchasedAt: order.createdAt ? new Date(order.createdAt).toISOString() : '',
+    }));
+
+    // CSV Export
+    if (req.query.export === 'csv') {
+      const fields = ['orderId', 'userId', 'name', 'email', 'phone', 'amount', 'paymentId', 'accessExpiresAt', 'purchasedAt'];
+      const parser = new Parser({ fields });
+      const csv = parser.parse(data);
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename="${slug}-subscribers.csv"`);
+      res.send(csv);
+      return;
+    }
+
+    res.json({
+      movie: { _id: movie._id, title: movie.title, slug: movie.slug },
+      totalSubscribers: data.length,
+      subscribers: data
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error fetching movie subscribers', error });
+  }
+};
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MOVIE-WISE REVIEWS DATA
+// GET /api/admin/movies/:slug/reviews
+// ─────────────────────────────────────────────────────────────────────────────
+export const getMovieReviewsById = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { slug } = req.params;
+
+    // Resolve movie by slug or ObjectId
+    let movie: any;
+    if (mongoose.isValidObjectId(slug)) {
+      movie = await Movie.findById(slug).lean();
+    }
+    if (!movie) {
+      movie = await Movie.findOne({ slug }).lean();
+    }
+    if (!movie) {
+      res.status(404).json({ message: 'Movie not found' });
+      return;
+    }
+
+    const reviews = await Review.find({ movie: movie._id })
+      .populate('user', 'name email')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const data = reviews.map((review: any) => ({
+      reviewId: review._id?.toString(),
+      userId: review.user?._id?.toString(),
+      userName: review.user?.name || 'N/A',
+      userEmail: review.user?.email || 'N/A',
+      rating: review.rating,
+      title: review.title || '',
+      comment: review.comment,
+      verifiedPurchase: review.verifiedPurchase ? 'Yes' : 'No',
+      likes: review.likes?.length ?? 0,
+      dislikes: review.dislikes?.length ?? 0,
+      createdAt: review.createdAt ? new Date(review.createdAt).toISOString() : '',
+    }));
+
+    const avgRating = data.length > 0
+      ? (data.reduce((s, r) => s + r.rating, 0) / data.length).toFixed(2)
+      : 0;
+
+    // CSV Export
+    if (req.query.export === 'csv') {
+      const fields = ['reviewId', 'userId', 'userName', 'userEmail', 'rating', 'title', 'comment', 'verifiedPurchase', 'likes', 'dislikes', 'createdAt'];
+      const parser = new Parser({ fields });
+      const csv = parser.parse(data);
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename="${slug}-reviews.csv"`);
+      res.send(csv);
+      return;
+    }
+
+    res.json({
+      movie: { _id: movie._id, title: movie.title, slug: movie.slug },
+      totalReviews: data.length,
+      averageRating: avgRating,
+      reviews: data
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error fetching movie reviews', error });
+  }
+};

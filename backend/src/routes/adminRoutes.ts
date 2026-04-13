@@ -1,6 +1,6 @@
 import express from 'express';
 import mongoose from 'mongoose';
-import { getMovies, createMovie, updateMovie, deleteMovie, getDashboardStats, getUsers, updateUser, deleteUser, adminRestoreUser, getOrders, getMovieAnalytics, getBunnyVideos, getMonthlyAnalytics, getUserPurchases, getTrafficAnalytics, getAuditLogs, getAllReviews, adminUpdateOrder, adminDeleteOrder, adminRestoreOrder, rollbackEntityVersion, getAnalyticsList, adminDeleteAnalytics, adminRestoreAnalytics } from '../controllers/adminController';
+import { getMovies, createMovie, updateMovie, deleteMovie, getDashboardStats, getUsers, updateUser, deleteUser, adminRestoreUser, getOrders, getMovieAnalytics, getBunnyVideos, getMonthlyAnalytics, getUserPurchases, getTrafficAnalytics, getAuditLogs, getAllReviews, adminUpdateOrder, adminDeleteOrder, adminRestoreOrder, rollbackEntityVersion, getAnalyticsList, adminDeleteAnalytics, adminRestoreAnalytics, getMovieSubscribers, getMovieReviewsById } from '../controllers/adminController';
 import { adminUpdateReview, adminDeleteReview, adminRestoreReview, adminClearReviews } from '../controllers/reviewController';
 import { protect, admin, requireRole } from '../middlewares/authMiddleware';
 
@@ -44,5 +44,9 @@ router.put('/reviews/:id', requireRole(['SUPER_ADMIN', 'ADMIN', 'MODERATOR']), a
 router.delete('/reviews/:id', requireRole(['SUPER_ADMIN', 'ADMIN', 'MODERATOR']), adminDeleteReview as any);
 router.patch('/reviews/restore/:id', requireRole(['SUPER_ADMIN', 'ADMIN']), adminRestoreReview as any);
 router.post('/reviews/clear', requireRole(['SUPER_ADMIN', 'ADMIN']), adminClearReviews as any);
+
+// Movie-wise subscriber and review data (with ?export=csv support)
+router.get('/movies/:slug/subscribers', getMovieSubscribers);
+router.get('/movies/:slug/reviews', getMovieReviewsById);
 
 export default router;
