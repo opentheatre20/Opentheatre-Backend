@@ -19,6 +19,7 @@ export interface IMovie extends Document, IAuditable {
   releaseYear: number;
   isActive: boolean;
   displayLocations: string[];
+  inviteReferralsCampaignId: number | null;
   createdAt: Date;
 }
 
@@ -41,6 +42,7 @@ const movieSchema = new Schema<IMovie>(
     releaseYear: { type: Number },
     isActive: { type: Boolean, default: true },
     displayLocations: [{ type: String, enum: ['home_banner', 'trending', 'new_releases'] }],
+    inviteReferralsCampaignId: { type: Number, default: null },
   },
   { timestamps: true }
 );
