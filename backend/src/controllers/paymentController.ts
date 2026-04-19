@@ -1,4 +1,4 @@
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { AuthRequest } from '../middlewares/authMiddleware';
 import Razorpay from 'razorpay';
 import crypto from 'crypto';
@@ -137,7 +137,7 @@ export const getMyRentals = async (req: AuthRequest, res: Response): Promise<voi
   }
 };
 
-export const razorpayWebhook = async (req: express.Request, res: Response): Promise<void> => {
+export const razorpayWebhook = async (req: Request, res: Response): Promise<void> => {
   try {
     const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
     if (!secret) {
