@@ -48,6 +48,10 @@ export const createOrder = async (req: AuthRequest, res: Response): Promise<void
       amount: movie.price * 100, // amount in paise
       currency: 'INR',
       receipt: `receipt_order_${Date.now()}`,
+      notes: {
+        userId: user._id.toString(),
+        movieId: movie._id.toString()
+      }
     };
 
     const order = await razorpay.orders.create(options);
@@ -130,5 +134,72 @@ export const getMyRentals = async (req: AuthRequest, res: Response): Promise<voi
   } catch (error) {
     console.error('Error fetching rentals:', error);
     res.status(500).json({ message: 'Server error fetching rentals', error });
+  }
+};
+
+export const razorpayWebhook = async (req: express.Request, res: Response): Promise<void> => {
+  try {
+    const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
+    if (!secret) {
+      console.warn('Webhook secret not configured, skipping validation (NOT recommended for production)');
+      // For fallback if they forget to add the variable immediately
+    }
+
+    const signature = req.headers['x-razorpay-signature'] as string;
+    
+    // Validate signature
+    if (secret) {
+      const expectedSignature = crypto
+        .createHmac('sha256', secret)
+        .update(JSON.stringify(req.body))
+        .digest('hex');
+
+      if (expectedSignature !== signature) {
+        res.status(400).json({ message: 'Invalid signature' });
+        return;
+      }
+    }
+
+    const event = req.body.event;
+
+    // Handle both payment.captured or order.paid
+    if (event === 'payment.captured' || event === 'order.paid') {
+      let entity = event === 'payment.captured' ? req.body.payload.payment.entity : req.body.payload.order.entity;
+      const notes = entity.notes;
+
+      if (notes && notes.movieId && notes.userId) {
+        const { movieId, userId } = notes;
+        const paymentId = event === 'payment.captured' ? entity.id : undefined;
+
+        // Check if an order already exists for this payment -> from frontend verifyPayment
+        const existingOrder = paymentId 
+          ? await Order.findOne({ paymentId }) 
+          : await Order.findOne({ userId, movieId, accessExpiresAt: { $gt: new Date() } });
+        
+        if (!existingOrder) {
+          const movie = await Movie.findById(movieId);
+          if (movie) {
+            const expiry = new Date();
+            expiry.setHours(expiry.getHours() + movie.rentalDuration);
+
+            await Order.create({
+              userId,
+              movieId,
+              paymentId: paymentId || ('webhook_' + Date.now()),
+              amount: movie.price,
+              accessExpiresAt: expiry,
+            });
+            console.log(`[Webhook] Access granted to User ${userId} for Movie ${movieId}`);
+          }
+        } else {
+          console.log(`[Webhook] Order already processed for User ${userId} and Movie ${movieId}`);
+        }
+      }
+    }
+
+    res.status(200).json({ status: 'ok' });
+  } catch (error) {
+    console.error('Razorpay Webhook Error:', error);
+    res.status(500).json({ message: 'Server Error in Webhook' });
   }
 };
