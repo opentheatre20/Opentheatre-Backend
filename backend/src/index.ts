@@ -11,8 +11,8 @@ dotenv.config();
 const requiredEnvVars = [
   'MONGODB_URI',
   'JWT_SECRET',
-  // 'RAZORPAY_KEY_ID', // Skipped for staging
-  // 'RAZORPAY_KEY_SECRET', // Skipped for staging
+  'RAZORPAY_KEY_ID', 
+  'RAZORPAY_KEY_SECRET', 
   'BUNNY_API_KEY',
   'BUNNY_STREAM_LIBRARY_ID',
   'BUNNY_CDN_HOSTNAME'
