@@ -27,6 +27,18 @@ export const createOrder = async (req: AuthRequest, res: Response): Promise<void
       const expiry = new Date();
       expiry.setHours(expiry.getHours() + movie.rentalDuration);
 
+      // Check for existing active rental first
+      const existingRental = await Order.findOne({
+        userId: req.user?._id,
+        movieId,
+        accessExpiresAt: { $gt: new Date() }
+      });
+
+      if (existingRental) {
+        res.status(200).json({ isFree: true, order: existingRental, movieId, message: 'Already have access' });
+        return;
+      }
+
       const order = await Order.create({
         userId: req.user?._id,
         movieId,
@@ -80,6 +92,25 @@ export const verifyPayment = async (req: AuthRequest, res: Response): Promise<vo
       
       if (!movie || !user) {
         res.status(404).json({ message: 'Movie or User not found during verification' });
+        return;
+      }
+
+      // Check if user already has active access (to prevent double entries)
+      const activeRental = await Order.findOne({
+        userId: req.user?._id,
+        movieId,
+        accessExpiresAt: { $gt: new Date() }
+      });
+
+      if (activeRental) {
+        res.status(200).json({ message: 'User already has active access to this movie', order: activeRental });
+        return;
+      }
+
+      // Check if this specific payment was already processed
+      const existingOrder = await Order.findOne({ paymentId: razorpay_payment_id });
+      if (existingOrder) {
+        res.status(200).json({ message: 'Payment already verified', order: existingOrder });
         return;
       }
 
@@ -171,10 +202,13 @@ export const razorpayWebhook = async (req: Request, res: Response): Promise<void
         const { movieId, userId } = notes;
         const paymentId = event === 'payment.captured' ? entity.id : undefined;
 
-        // Check if an order already exists for this payment -> from frontend verifyPayment
-        const existingOrder = paymentId 
-          ? await Order.findOne({ paymentId }) 
-          : await Order.findOne({ userId, movieId, accessExpiresAt: { $gt: new Date() } });
+        // Check if an order already exists for this payment OR if user already has active access
+        const existingOrder = await Order.findOne({
+          $or: [
+            { paymentId: paymentId || 'none' },
+            { userId, movieId, accessExpiresAt: { $gt: new Date() } }
+          ]
+        });
         
         if (!existingOrder) {
           const movie = await Movie.findById(movieId);
