@@ -25,6 +25,13 @@ export interface IMovie extends Document, IAuditable {
   promoBox1Text?: string;
   promoBox2Title?: string;
   promoBox2Text?: string;
+  tagline?: string;
+  tags?: string[];
+  castDetails?: { name: string; role: string; imageUrl: string }[];
+  userScore?: number;
+  ratingCount?: string;
+  trailerDuration?: string;
+  additionalClips?: { title: string; duration: string; thumbnailUrl: string; videoUrl: string }[];
   createdAt: Date;
 }
 
@@ -53,6 +60,22 @@ const movieSchema = new Schema<IMovie>(
     promoBox1Text: { type: String, default: null },
     promoBox2Title: { type: String, default: null },
     promoBox2Text: { type: String, default: null },
+    tagline: { type: String, default: null },
+    tags: [{ type: String }],
+    castDetails: [{ 
+      name: { type: String }, 
+      role: { type: String }, 
+      imageUrl: { type: String } 
+    }],
+    userScore: { type: Number, default: 0 },
+    ratingCount: { type: String, default: null },
+    trailerDuration: { type: String, default: null },
+    additionalClips: [{
+      title: { type: String },
+      duration: { type: String },
+      thumbnailUrl: { type: String },
+      videoUrl: { type: String }
+    }],
   },
   { timestamps: true }
 );
