@@ -10,18 +10,18 @@ import axios from 'axios';
 
 const generateTokens = (res: Response, id: string, role: string) => {
   const accessToken = jwt.sign({ id, role }, (process.env.JWT_SECRET || 'secret') as jwt.Secret, {
-    expiresIn: '15m', // Short lived
+    expiresIn: '30d', // Long lived access token
   } as jwt.SignOptions);
 
   const refreshToken = jwt.sign({ id, role }, (process.env.JWT_REFRESH_SECRET || 'refresh_secret') as jwt.Secret, {
-    expiresIn: '7d', // Long lived
+    expiresIn: '30d', // Long lived refresh token
   } as jwt.SignOptions);
 
   res.cookie('jwt', refreshToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV !== 'development', // Use secure cookies in production
     sameSite: 'strict', // Prevent CSRF attacks
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
   });
 
   return accessToken;
@@ -172,7 +172,7 @@ export const refreshAccessToken = async (req: Request, res: Response): Promise<v
     }
 
     const accessToken = jwt.sign({ id: user._id, role: user.role }, (process.env.JWT_SECRET || 'secret') as jwt.Secret, {
-      expiresIn: '15m',
+      expiresIn: '30d',
     } as jwt.SignOptions);
 
     res.json({ token: accessToken });
