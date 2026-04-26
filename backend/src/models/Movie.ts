@@ -20,6 +20,10 @@ export interface IMovie extends Document, IAuditable {
   isActive: boolean;
   displayLocations: string[];
   inviteReferralsCampaignId: number | null;
+  promoBox1Title?: string;
+  promoBox1Text?: string;
+  promoBox2Title?: string;
+  promoBox2Text?: string;
   createdAt: Date;
 }
 
@@ -43,6 +47,10 @@ const movieSchema = new Schema<IMovie>(
     isActive: { type: Boolean, default: true },
     displayLocations: [{ type: String, enum: ['home_banner', 'trending', 'new_releases'] }],
     inviteReferralsCampaignId: { type: Number, default: null },
+    promoBox1Title: { type: String, default: null },
+    promoBox1Text: { type: String, default: null },
+    promoBox2Title: { type: String, default: null },
+    promoBox2Text: { type: String, default: null },
   },
   { timestamps: true }
 );
