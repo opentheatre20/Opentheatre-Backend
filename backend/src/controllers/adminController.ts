@@ -822,3 +822,137 @@ export const getMovieReviewsById = async (req: Request, res: Response): Promise<
     res.status(500).json({ message: 'Server Error fetching movie reviews', error });
   }
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// USER PROFILE — Full details + purchase history
+// GET /api/admin/users/:id/profile
+// ─────────────────────────────────────────────────────────────────────────────
+export const getUserProfile = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+
+    const user = await User.findById(id).select('-password').lean();
+    if (!user) { res.status(404).json({ message: 'User not found' }); return; }
+
+    // Fetch all orders for this user, including movie details
+    const orders = await Order.find({ userId: id })
+      .populate('movieId', 'title slug thumbnailUrl price')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const now = new Date();
+
+    const purchases = orders.map((order: any) => ({
+      orderId: order._id?.toString(),
+      movieId: order.movieId?._id?.toString(),
+      movieTitle: order.movieId?.title || 'Unknown',
+      movieSlug: order.movieId?.slug || '',
+      movieThumbnail: order.movieId?.thumbnailUrl || '',
+      amount: order.amount,
+      paymentId: order.paymentId,
+      purchasedAt: order.createdAt,
+      accessExpiresAt: order.accessExpiresAt,
+      isManualGrant: order.paymentId?.startsWith('ADMIN_GRANT_') || false,
+      isDeleted: order.isDeleted || false,
+      status: order.isDeleted
+        ? 'voided'
+        : order.accessExpiresAt && new Date(order.accessExpiresAt) > now
+        ? 'active'
+        : 'expired',
+    }));
+
+    const totalSpent = orders.reduce((acc: number, o: any) => acc + (o.amount || 0), 0);
+    const activeCount = purchases.filter(p => p.status === 'active').length;
+
+    res.json({
+      user,
+      stats: {
+        totalSpent,
+        totalRentals: orders.length,
+        activeAccess: activeCount,
+      },
+      purchases,
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error fetching user profile', error });
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GRANT MOVIE ACCESS (Manual) — SUPER_ADMIN only
+// POST /api/admin/users/:id/grant-access
+// Body: { movieId, days }
+// ─────────────────────────────────────────────────────────────────────────────
+export const adminGrantMovieAccess = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { movieId, days = 30 } = req.body;
+
+    if (!movieId) { res.status(400).json({ message: 'movieId is required' }); return; }
+
+    const user = await User.findById(id);
+    if (!user) { res.status(404).json({ message: 'User not found' }); return; }
+
+    const movie = await Movie.findById(movieId);
+    if (!movie) { res.status(404).json({ message: 'Movie not found' }); return; }
+
+    const accessExpiresAt = new Date();
+    accessExpiresAt.setDate(accessExpiresAt.getDate() + Number(days));
+
+    const order = await Order.create({
+      userId: id,
+      movieId,
+      paymentId: `ADMIN_GRANT_${Date.now()}`,
+      amount: 0,
+      accessExpiresAt,
+    });
+
+    await AdminActivityLog.create({
+      actionType: 'UPDATE',
+      targetModel: 'Order',
+      targetId: order._id,
+      oldData: {},
+      newData: order.toObject(),
+      performedBy: (req as any).user?._id,
+    });
+
+    res.status(201).json({ message: `Access granted to "${movie.title}" for ${days} days`, order });
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error granting access', error });
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// REVOKE MOVIE ACCESS — SUPER_ADMIN only
+// DELETE /api/admin/users/:id/revoke-access/:orderId
+// ─────────────────────────────────────────────────────────────────────────────
+export const adminRevokeMovieAccess = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id, orderId } = req.params;
+
+    const order = await Order.findOne({ _id: orderId, userId: id });
+    if (!order) { res.status(404).json({ message: 'Order not found for this user' }); return; }
+
+    const oldData = order.toObject();
+
+    // Immediate revocation — set expiry to now and soft-delete
+    order.accessExpiresAt = new Date();
+    (order as any).isDeleted = true;
+    (order as any).deletedAt = new Date();
+    (order as any).deletedBy = (req as any).user?._id;
+    await order.save();
+
+    await AdminActivityLog.create({
+      actionType: 'DELETE',
+      targetModel: 'Order',
+      targetId: order._id,
+      oldData,
+      newData: order.toObject(),
+      performedBy: (req as any).user?._id,
+    });
+
+    res.json({ message: 'Movie access revoked successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error revoking access', error });
+  }
+};

@@ -1,6 +1,6 @@
 import express from 'express';
 import mongoose from 'mongoose';
-import { getMovies, createMovie, updateMovie, deleteMovie, getDashboardStats, getUsers, updateUser, deleteUser, adminRestoreUser, getOrders, getMovieAnalytics, getBunnyVideos, getMonthlyAnalytics, getUserPurchases, getTrafficAnalytics, getAuditLogs, getAllReviews, adminUpdateOrder, adminDeleteOrder, adminRestoreOrder, rollbackEntityVersion, getAnalyticsList, adminDeleteAnalytics, adminRestoreAnalytics, getMovieSubscribers, getMovieReviewsById } from '../controllers/adminController';
+import { getMovies, createMovie, updateMovie, deleteMovie, getDashboardStats, getUsers, updateUser, deleteUser, adminRestoreUser, getOrders, getMovieAnalytics, getBunnyVideos, getMonthlyAnalytics, getUserPurchases, getTrafficAnalytics, getAuditLogs, getAllReviews, adminUpdateOrder, adminDeleteOrder, adminRestoreOrder, rollbackEntityVersion, getAnalyticsList, adminDeleteAnalytics, adminRestoreAnalytics, getMovieSubscribers, getMovieReviewsById, getUserProfile, adminGrantMovieAccess, adminRevokeMovieAccess } from '../controllers/adminController';
 import { adminUpdateReview, adminDeleteReview, adminRestoreReview, adminClearReviews } from '../controllers/reviewController';
 import { protect, admin, requireRole } from '../middlewares/authMiddleware';
 
@@ -31,6 +31,9 @@ router.route('/users/:id')
   .put(updateUser)
   .delete(deleteUser)
   .patch(adminRestoreUser);
+router.get('/users/:id/profile', getUserProfile);
+router.post('/users/:id/grant-access', requireRole(['SUPER_ADMIN']), adminGrantMovieAccess);
+router.delete('/users/:id/revoke-access/:orderId', requireRole(['SUPER_ADMIN']), adminRevokeMovieAccess);
 router.get('/orders', getOrders);
 router.put('/orders/:id', requireRole(['SUPER_ADMIN', 'ADMIN']), adminUpdateOrder);
 router.delete('/orders/:id', requireRole(['SUPER_ADMIN']), adminDeleteOrder);
