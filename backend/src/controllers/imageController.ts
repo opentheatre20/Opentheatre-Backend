@@ -5,13 +5,14 @@ import path from 'path';
 
 export const uploadImage = async (req: Request, res: Response): Promise<void> => {
   try {
-    if (!req.file) {
+    const file = (req as any).file;
+    if (!file) {
       res.status(400).json({ message: 'No file uploaded' });
       return;
     }
 
-    const filename = `${Date.now()}-${req.file.originalname}`;
-    const url = await imageService.uploadToBunny(req.file.buffer, filename);
+    const filename = `${Date.now()}-${file.originalname}`;
+    const url = await imageService.uploadToBunny(file.buffer, filename);
 
     res.status(201).json({ url, filename });
   } catch (error: any) {
@@ -51,7 +52,7 @@ export const getImages = async (req: Request, res: Response): Promise<void> => {
 
 export const deleteImage = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { filename } = req.params;
+    const filename = req.params.filename as string;
     
     // Check if used
     const pullZoneUrl = (process.env.BUNNY_PULL_ZONE_URL || '').replace(/\/$/, '');
