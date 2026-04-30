@@ -117,15 +117,25 @@ export const verifyPayment = async (req: AuthRequest, res: Response): Promise<vo
       const expiry = new Date();
       expiry.setHours(expiry.getHours() + movie.rentalDuration);
 
-      const order = await Order.create({
-        userId: req.user?._id,
-        movieId,
-        paymentId: razorpay_payment_id,
-        amount: movie.price,
-        accessExpiresAt: expiry,
-      });
-      
-      res.status(200).json({ message: 'Payment verified successfully', order });
+      try {
+        const order = await Order.create({
+          userId: req.user?._id,
+          movieId,
+          razorpayOrderId: razorpay_order_id,
+          paymentId: razorpay_payment_id,
+          amount: movie.price,
+          accessExpiresAt: expiry,
+        });
+        res.status(200).json({ message: 'Payment verified successfully', order });
+      } catch (err: any) {
+        if (err.code === 11000) {
+          // Duplicate entry
+          const existing = await Order.findOne({ $or: [{ paymentId: razorpay_payment_id }, { razorpayOrderId: razorpay_order_id }] });
+          res.status(200).json({ message: 'Payment already processed', order: existing });
+        } else {
+          throw err;
+        }
+      }
     } else {
       res.status(400).json({ message: 'Invalid signature sent!' });
     }
@@ -202,10 +212,11 @@ export const razorpayWebhook = async (req: Request, res: Response): Promise<void
         const { movieId, userId } = notes;
         const paymentId = event === 'payment.captured' ? entity.id : undefined;
 
-        // Check if an order already exists for this payment OR if user already has active access
+        // Check if an order already exists for this payment OR orderId OR if user already has active access
         const existingOrder = await Order.findOne({
           $or: [
             { paymentId: paymentId || 'none' },
+            { razorpayOrderId: event === 'order.paid' ? entity.id : entity.order_id },
             { userId, movieId, accessExpiresAt: { $gt: new Date() } }
           ]
         });
@@ -216,14 +227,23 @@ export const razorpayWebhook = async (req: Request, res: Response): Promise<void
             const expiry = new Date();
             expiry.setHours(expiry.getHours() + movie.rentalDuration);
 
-            await Order.create({
-              userId,
-              movieId,
-              paymentId: paymentId || ('webhook_' + Date.now()),
-              amount: movie.price,
-              accessExpiresAt: expiry,
-            });
-            console.log(`[Webhook] Access granted to User ${userId} for Movie ${movieId}`);
+            try {
+              await Order.create({
+                userId,
+                movieId,
+                razorpayOrderId: event === 'order.paid' ? entity.id : entity.order_id,
+                paymentId: paymentId || ('webhook_' + Date.now()),
+                amount: movie.price,
+                accessExpiresAt: expiry,
+              });
+              console.log(`[Webhook] Access granted to User ${userId} for Movie ${movieId}`);
+            } catch (err: any) {
+              if (err.code === 11000) {
+                console.log(`[Webhook] Duplicate entry prevented for User ${userId}`);
+              } else {
+                console.error(`[Webhook] Error creating order:`, err);
+              }
+            }
           }
         } else {
           console.log(`[Webhook] Order already processed for User ${userId} and Movie ${movieId}`);
