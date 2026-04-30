@@ -30,9 +30,9 @@ export interface IMovie extends Document, IAuditable {
   tags?: string[];
   castDetails?: { name: string; role: string; imageUrl: string }[];
   userScore?: number;
-  ratingCount?: string;
-  trailerDuration?: string;
-  additionalClips?: { title: string; duration: string; thumbnailUrl: string; videoUrl: string }[];
+  bannerPosition?: number;
+  trendingPosition?: number;
+  newReleasesPosition?: number;
   createdAt: Date;
 }
 
@@ -56,6 +56,9 @@ const movieSchema = new Schema<IMovie>(
     releaseYear: { type: Number },
     duration: { type: String, default: null },
     isActive: { type: Boolean, default: true },
+    bannerPosition: { type: Number, default: 0 },
+    trendingPosition: { type: Number, default: 0 },
+    newReleasesPosition: { type: Number, default: 0 },
     displayLocations: [{ type: String, enum: ['home_banner', 'trending', 'new_releases'] }],
     inviteReferralsCampaignId: { type: Number, default: null },
     promoBox1Title: { type: String, default: null },
