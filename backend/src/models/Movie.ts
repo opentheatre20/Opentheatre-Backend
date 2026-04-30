@@ -30,6 +30,9 @@ export interface IMovie extends Document, IAuditable {
   tags?: string[];
   castDetails?: { name: string; role: string; imageUrl: string }[];
   userScore?: number;
+  ratingCount?: string;
+  trailerDuration?: string;
+  additionalClips?: { title: string; duration: string; thumbnailUrl: string; videoUrl: string }[];
   bannerPosition?: number;
   trendingPosition?: number;
   newReleasesPosition?: number;
