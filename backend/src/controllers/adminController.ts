@@ -325,7 +325,27 @@ export const adminRestoreUser = async (req: Request, res: Response): Promise<voi
 
 export const getOrders = async (req: Request, res: Response): Promise<void> => {
   try {
-    const orders = await Order.find({}).populate('userId', 'name email').populate('movieId', 'title');
+    const { month, year } = req.query;
+    let query: any = {};
+    
+    if (year) {
+      const y = Number(year);
+      if (month) {
+        const m = Number(month);
+        const startOfMonth = new Date(y, m - 1, 1);
+        const endOfMonth = new Date(y, m, 0, 23, 59, 59, 999);
+        query.createdAt = { $gte: startOfMonth, $lte: endOfMonth };
+      } else {
+        const startOfYear = new Date(y, 0, 1);
+        const endOfYear = new Date(y, 11, 31, 23, 59, 59, 999);
+        query.createdAt = { $gte: startOfYear, $lte: endOfYear };
+      }
+    }
+
+    const orders = await Order.find(query)
+      .populate('userId', 'name email')
+      .populate('movieId', 'title')
+      .sort({ createdAt: -1 });
     res.json(orders);
   } catch (error) {
     res.status(500).json({ message: 'Server Error', error });
