@@ -2,7 +2,11 @@ import express from 'express';
 import mongoose from 'mongoose';
 import { getMovies, createMovie, updateMovie, deleteMovie, getDashboardStats, getUsers, updateUser, deleteUser, adminRestoreUser, getOrders, getMovieAnalytics, getBunnyVideos, getMonthlyAnalytics, getUserPurchases, getTrafficAnalytics, getAuditLogs, getAllReviews, adminUpdateOrder, adminDeleteOrder, adminRestoreOrder, rollbackEntityVersion, getAnalyticsList, adminDeleteAnalytics, adminRestoreAnalytics, getMovieSubscribers, getMovieReviewsById, getUserProfile, adminGrantMovieAccess, adminRevokeMovieAccess } from '../controllers/adminController';
 import { adminUpdateReview, adminDeleteReview, adminRestoreReview, adminClearReviews } from '../controllers/reviewController';
+import { uploadImage, getImages, deleteImage } from '../controllers/imageController';
 import { protect, admin, requireRole } from '../middlewares/authMiddleware';
+import multer from 'multer';
+
+const upload = multer({ storage: multer.memoryStorage() });
 
 const router = express.Router();
 
@@ -51,5 +55,10 @@ router.post('/reviews/clear', requireRole(['SUPER_ADMIN', 'ADMIN']), adminClearR
 // Movie-wise subscriber and review data (with ?export=csv support)
 router.get('/movies/:slug/subscribers', getMovieSubscribers);
 router.get('/movies/:slug/reviews', getMovieReviewsById);
+
+// Image Management
+router.get('/images', getImages);
+router.post('/images/upload', upload.single('image'), uploadImage);
+router.delete('/images/:filename', deleteImage);
 
 export default router;

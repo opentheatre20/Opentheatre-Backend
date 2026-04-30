@@ -8,6 +8,7 @@ export interface IMovie extends Document, IAuditable {
   price: number;
   rentalDuration: number; // in hours
   thumbnailUrl: string;
+  mobileThumbnailUrl?: string;
   trailerUrl: string;
   videoLibraryId: string;
   genre: string;
@@ -43,6 +44,7 @@ const movieSchema = new Schema<IMovie>(
     price: { type: Number, required: true },
     rentalDuration: { type: Number, required: true, default: 48 },
     thumbnailUrl: { type: String, required: true },
+    mobileThumbnailUrl: { type: String },
     trailerUrl: { type: String },
     videoLibraryId: { type: String, required: true }, // Bunny.net mapping
     genre: { type: String, required: true },
