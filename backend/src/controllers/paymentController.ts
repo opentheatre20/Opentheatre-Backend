@@ -5,6 +5,7 @@ import crypto from 'crypto';
 import Order from '../models/Order';
 import Movie from '../models/Movie';
 import User from '../models/User';
+import { sendOrderConfirmationEmail } from '../services/emailService';
 
 export const createOrder = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -46,6 +47,18 @@ export const createOrder = async (req: AuthRequest, res: Response): Promise<void
         amount: movie.price, // Store the actual movie price
         accessExpiresAt: expiry,
       });
+
+      // Send Confirmation Email for Free Access
+      if (user.email && !user.email.includes('@opentheatre.local')) {
+        sendOrderConfirmationEmail(
+          user.email,
+          user.name || 'User',
+          movie.title,
+          movie.price,
+          order.paymentId,
+          `${process.env.FRONTEND_URL || 'https://opentheatre.in'}/watch/${movie.slug || movie._id}`
+        ).catch(err => console.error("Error sending free rental email:", err));
+      }
 
       res.status(200).json({ isFree: true, order, movieId });
       return;
@@ -126,6 +139,19 @@ export const verifyPayment = async (req: AuthRequest, res: Response): Promise<vo
           amount: movie.price,
           accessExpiresAt: expiry,
         });
+
+        // Send Confirmation Email
+        if (user.email && !user.email.includes('@opentheatre.local')) {
+          sendOrderConfirmationEmail(
+            user.email,
+            user.name || 'User',
+            movie.title,
+            movie.price,
+            razorpay_payment_id,
+            `${process.env.FRONTEND_URL || 'https://opentheatre.in'}/watch/${movie.slug || movie._id}`
+          ).catch(err => console.error("Error sending order confirmation email:", err));
+        }
+
         res.status(200).json({ message: 'Payment verified successfully', order });
       } catch (err: any) {
         if (err.code === 11000) {
@@ -228,7 +254,7 @@ export const razorpayWebhook = async (req: Request, res: Response): Promise<void
             expiry.setHours(expiry.getHours() + movie.rentalDuration);
 
             try {
-              await Order.create({
+              const order = await Order.create({
                 userId,
                 movieId,
                 razorpayOrderId: event === 'order.paid' ? entity.id : entity.order_id,
@@ -236,7 +262,21 @@ export const razorpayWebhook = async (req: Request, res: Response): Promise<void
                 amount: movie.price,
                 accessExpiresAt: expiry,
               });
-              console.log(`[Webhook] Access granted to User ${userId} for Movie ${movieId}`);
+
+              // Send Confirmation Email (from Webhook)
+              const user = await User.findById(userId);
+              if (user && user.email && !user.email.includes('@opentheatre.local')) {
+                sendOrderConfirmationEmail(
+                  user.email,
+                  user.name || 'User',
+                  movie.title,
+                  movie.price,
+                  order.paymentId,
+                  `${process.env.FRONTEND_URL || 'https://opentheatre.in'}/watch/${movie.slug || movie._id}`
+                ).catch(err => console.error("Error sending webhook order confirmation email:", err));
+              }
+
+              console.log(`[Webhook] Access granted and email sent to User ${userId} for Movie ${movieId}`);
             } catch (err: any) {
               if (err.code === 11000) {
                 console.log(`[Webhook] Duplicate entry prevented for User ${userId}`);
