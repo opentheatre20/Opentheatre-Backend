@@ -189,6 +189,7 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
     const user = await User.findOne({ email });
 
     if (!user) {
+      console.log(`[ForgotPassword] User not found for email: ${email}`);
       // Return 200 even if user not found to prevent email enumeration
       res.status(200).json({ message: 'If that email address is in our database, we will send you an email to reset your password.' });
       return;
@@ -213,6 +214,7 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
         userName: user.name,
         resetUrl: resetUrl
       });
+      console.log(`[ForgotPassword] Successfully sent reset link to ${user.email}`);
       res.status(200).json({ message: 'If that email address is in our database, we will send you an email to reset your password.' });
     } catch (error) {
       user.resetPasswordToken = undefined;
