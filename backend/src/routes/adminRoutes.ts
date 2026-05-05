@@ -2,8 +2,9 @@ import express from 'express';
 import mongoose from 'mongoose';
 import { getMovies, createMovie, updateMovie, deleteMovie, getDashboardStats, getUsers, updateUser, deleteUser, adminRestoreUser, getOrders, getMovieAnalytics, getBunnyVideos, getMonthlyAnalytics, getUserPurchases, getTrafficAnalytics, getAuditLogs, getAllReviews, adminUpdateOrder, adminDeleteOrder, adminRestoreOrder, rollbackEntityVersion, getAnalyticsList, adminDeleteAnalytics, adminRestoreAnalytics, getMovieSubscribers, getMovieReviewsById, getUserProfile, adminGrantMovieAccess, adminRevokeMovieAccess } from '../controllers/adminController';
 import { adminUpdateReview, adminDeleteReview, adminRestoreReview, adminClearReviews } from '../controllers/reviewController';
-import { uploadImage, getImages, deleteImage } from '../controllers/imageController';
 import { protect, admin, requireRole } from '../middlewares/authMiddleware';
+import { getTemplates, getTemplateById, createTemplate, updateTemplate, deleteTemplate } from '../controllers/emailTemplateController';
+import { uploadImage, getImages, deleteImage } from '../controllers/imageController';
 import multer from 'multer';
 
 const upload = multer({ storage: multer.memoryStorage() });
@@ -60,5 +61,15 @@ router.get('/movies/:slug/reviews', getMovieReviewsById);
 router.get('/images', getImages);
 router.post('/images/upload', upload.single('image'), uploadImage);
 router.delete('/images/:filename', deleteImage);
+
+// Email Templates Management
+router.route('/email-templates')
+  .get(requireRole(['SUPER_ADMIN', 'ADMIN']), getTemplates)
+  .post(requireRole(['SUPER_ADMIN']), createTemplate);
+
+router.route('/email-templates/:id')
+  .get(requireRole(['SUPER_ADMIN', 'ADMIN']), getTemplateById)
+  .put(requireRole(['SUPER_ADMIN']), updateTemplate)
+  .delete(requireRole(['SUPER_ADMIN']), deleteTemplate);
 
 export default router;

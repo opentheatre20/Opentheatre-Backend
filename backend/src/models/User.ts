@@ -10,6 +10,8 @@ export interface IUser extends Document, IAuditable {
   role: "user" | "admin" | "MODERATOR" | "ADMIN" | "SUPER_ADMIN";
   provider?: "local" | "google" | "facebook" | "phone";
   providerId?: string;
+  resetPasswordToken?: string;
+  resetPasswordExpire?: Date;
   location?: {
     ip: string;
     country: string;
@@ -43,6 +45,8 @@ const userSchema = new Schema<IUser>(
     },
     provider: { type: String, default: "local" },
     providerId: { type: String },
+    resetPasswordToken: { type: String },
+    resetPasswordExpire: { type: Date },
     location: {
       country: { type: String },
       city: { type: String },

@@ -7,6 +7,8 @@ import TrafficLog from '../models/TrafficLog';
 import geoip from 'geoip-lite';
 import jwt from 'jsonwebtoken';
 import axios from 'axios';
+import crypto from 'crypto';
+import { sendDynamicEmail } from '../services/emailService';
 
 const generateTokens = (res: Response, id: string, role: string) => {
   const accessToken = jwt.sign({ id, role }, (process.env.JWT_SECRET || 'secret') as jwt.Secret, {
@@ -178,5 +180,83 @@ export const refreshAccessToken = async (req: Request, res: Response): Promise<v
     res.json({ token: accessToken });
   } catch (error) {
     res.status(401).json({ message: 'Not authorized, token failed' });
+  }
+};
+
+export const forgotPassword = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      // Return 200 even if user not found to prevent email enumeration
+      res.status(200).json({ message: 'If that email address is in our database, we will send you an email to reset your password.' });
+      return;
+    }
+
+    // Generate reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
+
+    user.resetPasswordToken = resetTokenHash;
+    user.resetPasswordExpire = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+    await user.save();
+
+    // Create reset url
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
+
+    // Send email using dynamic template
+    try {
+      await sendDynamicEmail(user.email!, 'forgot-password', {
+        userName: user.name,
+        resetUrl: resetUrl
+      });
+      res.status(200).json({ message: 'If that email address is in our database, we will send you an email to reset your password.' });
+    } catch (error) {
+      user.resetPasswordToken = undefined;
+      user.resetPasswordExpire = undefined;
+      await user.save();
+      console.error('Error sending reset password email:', error);
+      res.status(500).json({ message: 'Error sending email' });
+    }
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const resetPassword = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { token, password } = req.body;
+
+    if (!token || !password) {
+      res.status(400).json({ message: 'Token and new password are required' });
+      return;
+    }
+
+    const resetPasswordToken = crypto.createHash('sha256').update(token).digest('hex');
+
+    const user = await User.findOne({
+      resetPasswordToken,
+      resetPasswordExpire: { $gt: new Date() }
+    });
+
+    if (!user) {
+      res.status(400).json({ message: 'Invalid or expired password reset token' });
+      return;
+    }
+
+    user.password = password; // pre-save hook will hash it
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpire = undefined;
+
+    await user.save();
+
+    res.status(200).json({ message: 'Password has been reset successfully' });
+  } catch (error) {
+    console.error('Reset password error:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 };

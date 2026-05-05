@@ -1,13 +1,15 @@
 import express from 'express';
 import passport from 'passport';
 import jwt from 'jsonwebtoken';
-import { registerUser, loginUser, refreshAccessToken } from '../controllers/authController';
+import { registerUser, loginUser, refreshAccessToken, forgotPassword, resetPassword } from '../controllers/authController';
 
 const router = express.Router();
 
 router.post('/register', registerUser);
 router.post('/login', loginUser);
 router.post('/refresh', refreshAccessToken);
+router.post('/forgot-password', forgotPassword);
+router.post('/reset-password', resetPassword);
 
 // Google OAuth
 router.get('/google', (req, res, next) => {

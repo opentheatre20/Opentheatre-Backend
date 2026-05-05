@@ -1,4 +1,5 @@
 import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
+import EmailTemplate from '../models/EmailTemplate';
 
 const sesClient = new SESClient({
   region: process.env.AWS_REGION || "ap-south-1",
@@ -7,6 +8,58 @@ const sesClient = new SESClient({
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || "",
   },
 });
+
+export const sendDynamicEmail = async (
+  toEmail: string,
+  templateName: string,
+  templateData: Record<string, string | number>
+) => {
+  try {
+    const template = await EmailTemplate.findOne({ name: templateName });
+    if (!template) {
+      throw new Error(`EmailTemplate not found: ${templateName}`);
+    }
+
+    let subject = template.subject;
+    let htmlContent = template.htmlContent;
+
+    // Replace variables
+    Object.keys(templateData).forEach((key) => {
+      const regex = new RegExp(`{{${key}}}`, 'g');
+      subject = subject.replace(regex, String(templateData[key]));
+      htmlContent = htmlContent.replace(regex, String(templateData[key]));
+    });
+
+    const fromEmail = process.env.AWS_SES_FROM_EMAIL || "noreply@opentheatre.in";
+
+    const params = {
+      Source: fromEmail,
+      Destination: {
+        ToAddresses: [toEmail],
+      },
+      Message: {
+        Subject: {
+          Data: subject,
+          Charset: "UTF-8",
+        },
+        Body: {
+          Html: {
+            Data: htmlContent,
+            Charset: "UTF-8",
+          },
+        },
+      },
+    };
+
+    const command = new SendEmailCommand(params);
+    const result = await sesClient.send(command);
+    console.log(`[EmailService] Dynamic email '${templateName}' sent to ${toEmail}. MessageId: ${result.MessageId}`);
+    return result;
+  } catch (error) {
+    console.error(`[EmailService] Error sending dynamic email '${templateName}':`, error);
+    throw error;
+  }
+};
 
 export const sendOrderConfirmationEmail = async (
   userEmail: string,
@@ -17,6 +70,23 @@ export const sendOrderConfirmationEmail = async (
   watchUrl: string
 ) => {
   try {
+    // Try to send using dynamic template first
+    try {
+      return await sendDynamicEmail(userEmail, 'order-confirmation', {
+        userName,
+        movieTitle,
+        amount,
+        orderId,
+        watchUrl
+      });
+    } catch (dynamicError: any) {
+      if (dynamicError.message && dynamicError.message.includes('EmailTemplate not found')) {
+        console.log(`[EmailService] Dynamic template 'order-confirmation' not found, falling back to hardcoded template.`);
+      } else {
+        throw dynamicError;
+      }
+    }
+
     const fromEmail = process.env.AWS_SES_FROM_EMAIL || "noreply@opentheatre.in";
 
     const htmlContent = `
