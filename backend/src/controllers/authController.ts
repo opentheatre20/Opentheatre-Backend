@@ -183,13 +183,22 @@ export const refreshAccessToken = async (req: Request, res: Response): Promise<v
   }
 };
 
+import fs from 'fs';
+import path from 'path';
+
+const logDebug = (msg: string) => {
+  const logPath = path.join(process.cwd(), 'debug.log');
+  fs.appendFileSync(logPath, `[${new Date().toISOString()}] ${msg}\n`);
+  console.log(msg);
+};
+
 export const forgotPassword = async (req: Request, res: Response): Promise<void> => {
   try {
     const { email } = req.body;
     const user = await User.findOne({ email });
 
     if (!user) {
-      console.log(`[ForgotPassword] User not found for email: ${email}`);
+      logDebug(`[ForgotPassword] User NOT FOUND in database for email: ${email}`);
       // Return 200 even if user not found to prevent email enumeration
       res.status(200).json({ message: 'If that email address is in our database, we will send you an email to reset your password.' });
       return;
@@ -210,20 +219,23 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
 
     // Send email using dynamic template
     try {
+      logDebug(`[ForgotPassword] Attempting to send email via SES to: ${user.email}`);
       await sendDynamicEmail(user.email!, 'forgot-password', {
         userName: user.name,
         resetUrl: resetUrl
       });
-      console.log(`[ForgotPassword] Successfully sent reset link to ${user.email}`);
+      logDebug(`[ForgotPassword] Successfully sent reset link to ${user.email}`);
       res.status(200).json({ message: 'If that email address is in our database, we will send you an email to reset your password.' });
-    } catch (error) {
+    } catch (error: any) {
       user.resetPasswordToken = undefined;
       user.resetPasswordExpire = undefined;
       await user.save();
+      logDebug(`[ForgotPassword] ERROR sending reset password email: ${error.message || error}`);
       console.error('Error sending reset password email:', error);
       res.status(500).json({ message: 'Error sending email' });
     }
-  } catch (error) {
+  } catch (error: any) {
+    logDebug(`[ForgotPassword] Server error: ${error.message || error}`);
     console.error('Forgot password error:', error);
     res.status(500).json({ message: 'Server error' });
   }
