@@ -154,6 +154,7 @@ export const sendOrderConfirmationEmail = async (
 
     const params = {
       Source: fromEmail,
+      ReplyToAddresses: ['opentheatre20@gmail.com'],
       Destination: {
         ToAddresses: [userEmail],
       },
