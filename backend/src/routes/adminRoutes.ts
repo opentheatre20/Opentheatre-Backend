@@ -37,8 +37,8 @@ router.route('/users/:id')
   .delete(deleteUser)
   .patch(adminRestoreUser);
 router.get('/users/:id/profile', getUserProfile);
-router.post('/users/:id/grant-access', requireRole(['SUPER_ADMIN']), adminGrantMovieAccess);
-router.delete('/users/:id/revoke-access/:orderId', requireRole(['SUPER_ADMIN']), adminRevokeMovieAccess);
+router.post('/users/:id/grant-access', requireRole(['SUPER_ADMIN', 'ADMIN']), adminGrantMovieAccess);
+router.delete('/users/:id/revoke-access/:orderId', requireRole(['SUPER_ADMIN', 'ADMIN']), adminRevokeMovieAccess);
 router.get('/orders', getOrders);
 router.put('/orders/:id', requireRole(['SUPER_ADMIN', 'ADMIN']), adminUpdateOrder);
 router.delete('/orders/:id', requireRole(['SUPER_ADMIN']), adminDeleteOrder);
