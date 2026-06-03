@@ -7,7 +7,7 @@ export const getStreamUrl = (videoId: string) => {
   const iframeHost = 'iframe.mediadelivery.net';
   const expires = Math.floor(Date.now() / 1000) + 21600;
 
-  let url = `https://${iframeHost}/embed/${libraryId}/${videoId}`;
+  let url = `https://${iframeHost}/play/${libraryId}/${videoId}/playlist.m3u8`;
 
   if (tokenKey) {
     const signature = `${tokenKey}${videoId}${expires}`;
