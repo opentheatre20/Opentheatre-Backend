@@ -976,3 +976,54 @@ export const adminRevokeMovieAccess = async (req: Request, res: Response): Promi
     res.status(500).json({ message: 'Server Error revoking access', error });
   }
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// APP CONFIG
+// GET /api/admin/config
+// PUT /api/admin/config
+// ─────────────────────────────────────────────────────────────────────────────
+export const getAppConfig = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const config = await AppConfig.findOne() || await AppConfig.create({});
+    res.json(config);
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error fetching AppConfig', error });
+  }
+};
+
+export const updateAppConfig = async (req: Request, res: Response): Promise<void> => {
+  try {
+    let config = await AppConfig.findOne();
+    if (!config) {
+      config = await AppConfig.create({});
+    }
+    
+    const oldData = config.toObject();
+    
+    if (req.body.heroBannerText !== undefined) {
+      config.heroBannerText = req.body.heroBannerText;
+    }
+    if (req.body.chromecastEnabled !== undefined) {
+      config.chromecastEnabled = req.body.chromecastEnabled;
+    }
+    if (req.body.chromecastRestrictions !== undefined) {
+      config.chromecastRestrictions = req.body.chromecastRestrictions;
+    }
+
+    await config.save();
+
+    await AdminActivityLog.create({
+      actionType: 'UPDATE',
+      targetModel: 'AppConfig',
+      targetId: config._id,
+      oldData,
+      newData: config.toObject(),
+      performedBy: (req as any).user?._id,
+    });
+
+    res.json(config);
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error updating AppConfig', error });
+  }
+};
+

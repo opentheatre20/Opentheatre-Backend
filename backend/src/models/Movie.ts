@@ -19,6 +19,7 @@ export interface IMovie extends Document, IAuditable {
   language: string;
   releaseYear: number;
   duration?: string;
+  ageRating?: string;
   isActive: boolean;
   displayLocations: string[];
   inviteReferralsCampaignId: number | null;
@@ -58,6 +59,7 @@ const movieSchema = new Schema<IMovie>(
     language: { type: String },
     releaseYear: { type: Number },
     duration: { type: String, default: null },
+    ageRating: { type: String, default: 'U/A 16+' },
     isActive: { type: Boolean, default: true },
     bannerPosition: { type: Number, default: 0 },
     trendingPosition: { type: Number, default: 0 },

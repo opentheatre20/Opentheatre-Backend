@@ -1,6 +1,6 @@
 import express from 'express';
 import mongoose from 'mongoose';
-import { getMovies, createMovie, updateMovie, deleteMovie, getDashboardStats, getUsers, updateUser, deleteUser, adminRestoreUser, getOrders, getMovieAnalytics, getBunnyVideos, getMonthlyAnalytics, getUserPurchases, getTrafficAnalytics, getAuditLogs, getAllReviews, adminUpdateOrder, adminDeleteOrder, adminRestoreOrder, rollbackEntityVersion, getAnalyticsList, adminDeleteAnalytics, adminRestoreAnalytics, getMovieSubscribers, getMovieReviewsById, getUserProfile, adminGrantMovieAccess, adminRevokeMovieAccess } from '../controllers/adminController';
+import { getMovies, createMovie, updateMovie, deleteMovie, getDashboardStats, getUsers, updateUser, deleteUser, adminRestoreUser, getOrders, getMovieAnalytics, getBunnyVideos, getMonthlyAnalytics, getUserPurchases, getTrafficAnalytics, getAuditLogs, getAllReviews, adminUpdateOrder, adminDeleteOrder, adminRestoreOrder, rollbackEntityVersion, getAnalyticsList, adminDeleteAnalytics, adminRestoreAnalytics, getMovieSubscribers, getMovieReviewsById, getUserProfile, adminGrantMovieAccess, adminRevokeMovieAccess, getAppConfig, updateAppConfig } from '../controllers/adminController';
 import { adminUpdateReview, adminDeleteReview, adminRestoreReview, adminClearReviews } from '../controllers/reviewController';
 import { protect, admin, requireRole } from '../middlewares/authMiddleware';
 import { getTemplates, getTemplateById, createTemplate, updateTemplate, deleteTemplate } from '../controllers/emailTemplateController';
@@ -12,6 +12,10 @@ const upload = multer({ storage: multer.memoryStorage() });
 const router = express.Router();
 
 router.use(protect, admin);
+
+router.route('/config')
+  .get(getAppConfig)
+  .put(requireRole(['SUPER_ADMIN', 'ADMIN']), updateAppConfig);
 
 router.route('/movies')
   .get(getMovies)

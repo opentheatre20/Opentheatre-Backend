@@ -101,6 +101,7 @@ import reviewRoutes from './routes/reviewRoutes';
 import userRoutes from './routes/userRoutes';
 import otpRoutes from './routes/otpRoutes';
 import notificationRoutes from './routes/notificationRoutes';
+import configRoutes from './routes/configRoutes';
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -112,6 +113,7 @@ app.use('/api/reviews', reviewRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/otp', otpRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/config', configRoutes);
 
 app.get('/api/health', (req, res) => {
     res.status(200).json({ status: 'ok', message: 'API is running' });
