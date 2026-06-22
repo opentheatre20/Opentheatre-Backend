@@ -64,12 +64,20 @@ export const proxyM3u8 = async (req: AuthRequest, res: Response): Promise<void> 
     // Rewrite the key URI from relative path to our backend proxy
     // Original: URI="/videoId/key/keyId"
     // Rewritten: URI="https://api.opentheatre.in/api/videos/videoId/drm-key/keyId"
-    const rewritten = m3u8Content.replace(
+    let rewritten = m3u8Content.replace(
       /URI="(\/[^"]+\/key\/[^"]+)"/g,
       (_match: string, keyPath: string) => {
         const keyId = keyPath.split('/').pop();
         return `URI="${backendUrl}/api/videos/${videoId}/drm-key/${keyId}"`;
       }
+    );
+
+    // Rewrite relative segment URLs to absolute Bunny CDN URLs
+    // so HLS.js can resolve them from a Blob URL on the frontend
+    const segmentBase = `https://${cdnHostname}/${videoId}/${quality}/`;
+    rewritten = rewritten.replace(
+      /^(video\d+\.dts)$/gm,
+      (seg) => `${segmentBase}${seg}`
     );
 
     res.setHeader('Content-Type', 'application/vnd.apple.mpegurl');
