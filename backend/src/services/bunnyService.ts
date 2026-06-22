@@ -3,18 +3,10 @@ import crypto from 'crypto';
 export const getStreamUrl = (videoId: string) => {
   const libraryId = (process.env.BUNNY_STREAM_LIBRARY_ID || '').trim();
   const tokenKey = (process.env.BUNNY_STREAM_TOKEN_KEY || '').trim();
-  const cdnHostname = (process.env.BUNNY_CDN_HOSTNAME || '').trim();
   
-  const expires = Math.floor(Date.now() / 1000) + 21600;
+  const expires = Math.floor(Date.now() / 1000) + 21600; // 6 hours
 
-  let url = '';
-  if (cdnHostname) {
-    const cleanHostname = cdnHostname.replace(/^https?:\/\//, '').replace(/\/$/, '');
-    url = `https://${cleanHostname}/${videoId}/playlist.m3u8`;
-  } else {
-    const iframeHost = 'iframe.mediadelivery.net';
-    url = `https://${iframeHost}/play/${libraryId}/${videoId}/playlist.m3u8`;
-  }
+  let url = `https://iframe.mediadelivery.net/embed/${libraryId}/${videoId}`;
 
   if (tokenKey) {
     const signature = `${tokenKey}${videoId}${expires}`;
