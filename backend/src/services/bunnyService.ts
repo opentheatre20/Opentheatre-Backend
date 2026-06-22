@@ -3,9 +3,8 @@ import crypto from 'crypto';
 export const getStreamUrl = (videoId: string) => {
   const libraryId = (process.env.BUNNY_STREAM_LIBRARY_ID || '').trim();
   const tokenKey = (process.env.BUNNY_STREAM_TOKEN_KEY || '').trim();
-  const cdnHostname = (process.env.BUNNY_CDN_HOSTNAME || '').trim();
   
-  const iframeHost = cdnHostname ? cdnHostname.replace(/^https?:\/\//, '').replace(/\/$/, '') : 'iframe.mediadelivery.net';
+  const iframeHost = 'iframe.mediadelivery.net';
   const expires = Math.floor(Date.now() / 1000) + 21600;
 
   let url = `https://${iframeHost}/embed/${libraryId}/${videoId}`;
