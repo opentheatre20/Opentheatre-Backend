@@ -228,3 +228,31 @@ export const adminRestoreReview = async (req: AuthRequest, res: Response): Promi
     res.json({ message: 'Review restored successfully' });
   } catch (error) { res.status(500).json({ message: 'Server Error restoring review', error }); }
 };
+
+export const adminReplyReview = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { reply } = req.body;
+
+    const review = await Review.findById(id);
+    if (!review) {
+      res.status(404).json({ message: 'Review not found' });
+      return;
+    }
+
+    const oldData = review.toObject();
+    review.adminReply = reply;
+    await review.save();
+
+    await AdminActivityLog.create({
+      actionType: 'UPDATE', targetModel: 'Review', targetId: review._id,
+      oldData, newData: review.toObject(), performedBy: (req.user as any)?._id
+    });
+
+    const populated = await Review.findById(id).populate('user', 'name');
+    res.status(200).json(populated);
+  } catch (error) {
+    console.error('Reply Review Error:', error);
+    res.status(500).json({ message: 'Server Error replying to review', error });
+  }
+};
