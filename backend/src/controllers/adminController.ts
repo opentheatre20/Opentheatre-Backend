@@ -250,8 +250,39 @@ export const getMovieAnalytics = async (req: Request, res: Response): Promise<vo
 
 export const getUsers = async (req: Request, res: Response): Promise<void> => {
   try {
-    const users = await User.find({}).select('-password');
-    res.json(users);
+    const users = await User.find({}).select('-password').lean();
+    const orders = await Order.find({}).populate('movieId', 'title').lean();
+    const movies = await Movie.find({}).select('title').lean();
+
+    const usersWithPurchases = users.map((user: any) => {
+      const userOrders = orders.filter((o: any) => o.userId && o.userId.toString() === user._id.toString());
+      
+      const purchasedMovieIds = new Set();
+      const purchasedMovies: string[] = [];
+      
+      userOrders.forEach((o: any) => {
+        if (o.movieId) {
+          const mId = o.movieId._id?.toString() || o.movieId.toString();
+          purchasedMovieIds.add(mId);
+          if (o.movieId.title && !purchasedMovies.includes(o.movieId.title)) {
+            purchasedMovies.push(o.movieId.title);
+          }
+        }
+      });
+
+      const notPurchasedMovies = movies
+        .filter((m: any) => !purchasedMovieIds.has(m._id.toString()))
+        .map((m: any) => m.title);
+
+      return {
+        ...user,
+        purchasedMovies,
+        notPurchasedMovies,
+        purchaseCount: purchasedMovies.length
+      };
+    });
+
+    res.json(usersWithPurchases);
   } catch (error) {
     res.status(500).json({ message: 'Server Error', error });
   }
